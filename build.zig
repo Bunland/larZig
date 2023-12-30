@@ -12,6 +12,7 @@ pub fn build(b: *std.Build) void {
     });
 
     // exe.addIncludeDir("/usr/include/webkitgtk-4.0");
+
     exe.linkSystemLibrary("javascriptcoregtk-4.0");
     exe.linkSystemLibrary("c");
 

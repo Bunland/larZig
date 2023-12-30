@@ -3,7 +3,9 @@ const std = @import("std");
 const jsc = @import("../jsc/jsc.zig");
 const Maths = @import("../apis//maths/maths.zig").Maths;
 const Console = @import("../apis/console/console.zig").Console;
+
 const Fs = @import("../apis/fs/fs.zig").Fs;
+const Server = @import("../apis//server/server.zig").Server;
 const constants = @import("../constants/constants.zig");
 
 // Define the Apis structure
@@ -29,6 +31,9 @@ pub const Apis = struct {
 
         // Create a custom function
         try this.larCustomFunction(ctx, globalObject, "Add", Maths.Add);
+
+        // Server
+        try this.larCustomFunction(ctx, larGlobalObject, "Server", Server.server);
 
         // Fs
         try this.larCustomFunction(ctx, larGlobalObject, constants.writeFile, Fs.writeFile);

@@ -18,7 +18,7 @@ pub const Console = struct {
         // Create a custom function for the console
         try this.consoleCustomFunction(ctx, consoleObject, "log", this.Log);
         try this.consoleCustomFunction(ctx, consoleObject, "print", this.Log);
-
+        try this.consoleCustomFunction(ctx, consoleObject, "clear", this.Clear);
     }
 
     // Define a custom function for the console
@@ -53,5 +53,16 @@ pub const Console = struct {
         // Print a newline and return undefined
         std.debug.print("\n", .{});
         return jsc.JSValueMakeUndefined(context);
+    }
+
+    fn Clear(ctx: jsc.JSContextRef, globalObject: jsc.JSObjectRef, thisObject: jsc.JSObjectRef, argumentsCount: usize, arguments: [*c]const jsc.JSValueRef, exception: [*c]jsc.JSValueRef) callconv(.C) jsc.JSValueRef {
+        _ = globalObject;
+        _ = thisObject;
+        _ = argumentsCount;
+        _ = arguments;
+        _ = exception;
+
+        std.debug.print("\x1B[H\x1B[2J", .{});
+        return jsc.JSValueMakeUndefined(ctx);
     }
 };

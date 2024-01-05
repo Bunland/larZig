@@ -5,6 +5,18 @@ const jsc = @import("../../jsc/jsc.zig");
 // Define the Console structure
 pub const Console = struct {
     const this = @This();
+    const allocator = std.heap.page_allocator;
+
+    fn converJSVToString(ctx: jsc.JSContextRef, arguments: jsc.JSValueRef) ![]const u8 {
+        const arg = jsc.JSValueToStringCopy(ctx, arguments, null);
+        defer jsc.JSStringRelease(arg);
+
+        const buffer = try allocator.alloc(u8, jsc.JSStringGetMaximumUTF8CStringSize(arg));
+
+        const argLen = jsc.JSStringGetUTF8CString(arg, buffer.ptr, buffer.len);
+
+        return buffer[0 .. argLen - 1];
+    }
 
     // Initialize the console
     pub fn init(ctx: jsc.JSContextRef, globalObject: jsc.JSObjectRef) !void {
@@ -18,6 +30,7 @@ pub const Console = struct {
         // Create a custom function for the console
         try this.consoleCustomFunction(ctx, consoleObject, "log", this.Log);
         try this.consoleCustomFunction(ctx, consoleObject, "print", this.Log);
+        try this.consoleCustomFunction(ctx, consoleObject, "assert", this.Assert);
         try this.consoleCustomFunction(ctx, consoleObject, "clear", this.Clear);
     }
 
@@ -36,7 +49,6 @@ pub const Console = struct {
         _ = globalObject;
         _ = thisObject;
         // Loop through the arguments and print them
-        const allocator = std.heap.page_allocator;
         var i: usize = 0;
         while (i < argumentsCount) : (i += 1) {
             const string = jsc.JSValueToStringCopy(context, arguments[i], exception);
@@ -53,6 +65,31 @@ pub const Console = struct {
         // Print a newline and return undefined
         std.debug.print("\n", .{});
         return jsc.JSValueMakeUndefined(context);
+    }
+
+    fn Assert(ctx: jsc.JSContextRef, globalObject: jsc.JSObjectRef, thisObject: jsc.JSObjectRef, argumentsCount: usize, arguments: [*c]const jsc.JSValueRef, exception: [*c]jsc.JSValueRef) callconv(.C) jsc.JSValueRef {
+        _ = globalObject;
+        _ = thisObject;
+        _ = exception;
+
+        if (argumentsCount < 2) {
+            std.debug.print("Assertion failed\n", .{});
+            return jsc.JSValueMakeUndefined(ctx);
+        }
+
+        const boolValue = jsc.JSValueToBoolean(ctx, arguments[0]);
+        if (!boolValue) {
+            const message = this.converJSVToString(ctx, arguments[1]) catch |err| {
+                std.debug.print("Error: {}\n", .{err});
+                return jsc.JSValueMakeUndefined(ctx);
+            };
+            defer allocator.free(message);
+            
+            std.debug.print("Assertion failed: {s}\n", .{message});
+            return jsc.JSValueMakeUndefined(ctx);
+        }
+
+        return jsc.JSValueMakeUndefined(ctx);
     }
 
     fn Clear(ctx: jsc.JSContextRef, globalObject: jsc.JSObjectRef, thisObject: jsc.JSObjectRef, argumentsCount: usize, arguments: [*c]const jsc.JSValueRef, exception: [*c]jsc.JSValueRef) callconv(.C) jsc.JSValueRef {

@@ -33,7 +33,7 @@ pub const Apis = struct {
         try this.larCustomFunction(ctx, globalObject, "Add", Maths.Add);
 
         // Server
-        try this.larCustomFunction(ctx, larGlobalObject, "Server", Server.server);
+        // try this.larCustomFunction(ctx, larGlobalObject, "Server", Server.start);
 
         // Fs
         try this.larCustomFunction(ctx, larGlobalObject, constants.writeFile, Fs.writeFile);

@@ -15,9 +15,59 @@ pub const Server = struct {
     const this = @This();
     const allocator = std.heap.page_allocator;
 
-    pub fn parseJson(jsonString: []const u8) !ServerData {
-        const result = try std.json.parseFromSlice(ServerData, allocator, jsonString, .{});
-        return result;
+    var server_fd: i32 = undefined;
+    var new_socket: i32 = undefined;
+    var address = c.sockaddr_in{ .sin_family = c.AF_INET, .sin_addr = c.in_addr{ .s_addr = c.INADDR_ANY }, .sin_zero = [_]u8{0} ** 8 };
+    var addrlen: c.socklen_t = @sizeOf(c.sockaddr_in);
+
+    pub fn setPort(port: u16) void {
+        address.sin_port = c.htons(port);
+    }
+
+    pub fn config() void {
+        server_fd = c.socket(c.AF_INET, c.SOCK_STREAM, 0);
+        if (server_fd == 0) {
+            std.debug.print("Failed to create socket\n", .{});
+            // return error.SocketCreationFailed;
+        }
+
+        if (c.bind(server_fd, @as(*c.sockaddr, @ptrCast(&address)), addrlen) < 0) {
+            std.debug.print("Failed to bind\n", .{});
+            // return error.BindFailed;
+        }
+
+        if (c.listen(server_fd, 10) < 0) {
+            std.debug.print("Failed to listen\n", .{});
+            // return error.ListenFailed;
+        }
+    }
+
+    pub fn myHandler(n_socket: i32) void {
+        std.debug.print("estoy aca\n", .{});
+
+        var buffer: [2048]u8 = undefined;
+        const bytesRead = c.read(n_socket, &buffer, buffer.len);
+        if (bytesRead < 0) {
+            std.debug.print("Failed to read\n", .{});
+            return;
+        }
+        std.debug.print("Received: {s}\n", .{std.mem.sliceTo(buffer[0..@as(usize, @intCast(bytesRead))], 0)});
+
+        const response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nHello, world!\n";
+        _ = c.write(n_socket, response, @as(usize, response.len));
+        std.debug.print("Message sent\n", .{});
+        _ = c.close(n_socket);
+    }
+
+    pub fn handleRequest(handler: *const fn (i32) void) void {
+        while (true) {
+            new_socket = c.accept(server_fd, @as(*c.sockaddr, @ptrCast(&address)), &addrlen);
+            if (new_socket < 0) {
+                std.debug.print("Error AcceptFiled", .{});
+                // return error.AcceptFiled;
+            }
+            handler(new_socket);
+        }
     }
 
     fn converJSVToString(
@@ -38,45 +88,23 @@ pub const Server = struct {
         return buffer[0 .. argLen - 1];
     }
 
-    pub fn server(ctx: jsc.JSContextRef, globalObject: jsc.JSObjectRef, thisObject: jsc.JSObjectRef, argumentsCount: usize, arguments: [*c]const jsc.JSValueRef, execption: [*c]jsc.JSValueRef) callconv(.C) jsc.JSValueRef {
+    pub fn start(ctx: jsc.JSContextRef, globalObject: jsc.JSObjectRef, thisObject: jsc.JSObjectRef, argumentsCount: usize, arguments: [*c]const jsc.JSValueRef, execption: [*c]jsc.JSValueRef) callconv(.C) jsc.JSValueRef {
+        _ = arguments;
         _ = globalObject;
         _ = thisObject;
         _ = execption;
 
         if (argumentsCount < 1) {
-            std.debug.print("THe function requires 1 arguments\n", .{});
+            std.debug.print("The function requires 1 arguments\n", .{});
             return jsc.JSValueMakeUndefined(ctx);
         }
 
-        const obj = this.converJSVToString(ctx, arguments[0]) catch |err| {
-            std.debug.print("Error: {}\n", .{err});
-            return jsc.JSValueMakeUndefined(ctx);
-        };
-        defer allocator.free(obj);
-
-        const value = std.json.parseFromSlice(ServerData, allocator, obj, .{}) catch |err| {
-            std.debug.print("{any}", .{@TypeOf(err)});
-            return undefined;
-        };
-        defer value.deinit();
-
-        // const res = std.json.parseFromSlice(u8, allocator, obj, .{}) catch |err| {
-        //     if (err == error.UnexpectedToken) {
-        //         return jsc.JSValueMakeUndefined(ctx);
-        //     }
-        // };
-
-        // const res = std.json.parseFromSlice(u8, allocator, obj, .{}) catch |err| {
-        //     if (err == error.saom) {
-        //     }
-        // };
-
-        std.debug.print("Here: {}\n", .{value.value.id});
-        std.debug.print("Here: {}\n", .{value.value.port});
+        this.setPort(4000);
+        this.config();
+        this.handleRequest(this.myHandler);
 
         const hello = jsc.JSStringCreateWithUTF8CString("Hello Server");
         defer jsc.JSStringRelease(hello);
-
         return jsc.JSValueMakeString(ctx, hello);
     }
 };

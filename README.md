@@ -15,7 +15,7 @@ A javascript runtime written in zig that uses javascriptcore as the javascript e
 console.assert(value[, ...message]) // ready
 console.clear() // ready
 console.count([label]) // ready
-console.countReset([label]) // soon
+console.countReset([label]) // ready
 console.debug(data[, ...args]) // soon
 console.dir(obj[, options]) // soon
 console.dirxml(...data) // soon

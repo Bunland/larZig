@@ -84,11 +84,9 @@
 // };
 // 
 // console.log( "SOY LAR", lar.Server(JSON.stringify(obj)));
+// console.count("Mensaje principal de advertencia:", "Esto es un detalle adicional.", 42, { tipo: "ejemplo" });
 
-
-for (let index = 0; index < 1000000; index++) {
-  // const element = array[index];
-
-  console.count("Hello",index)
-  
-}
+console.count("ejemplo")
+console.count("ejemplo")
+console.countReset("s")
+console.count("ejemplo")

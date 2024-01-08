@@ -2,6 +2,8 @@
 const std = @import("std");
 const jsc = @import("../../jsc/jsc.zig");
 
+const constants = @import("../../constants/constants.zig");
+
 const Counter = struct { label: []const u8, count: usize };
 
 // Define the Console structure
@@ -24,12 +26,11 @@ pub const Console = struct {
         jsc.JSObjectSetProperty(ctx, globalObject, console, consoleObject, jsc.kJSClassAttributeNone, null);
 
         // Create a custom function for the console
-        try this.consoleCustomFunction(ctx, consoleObject, "log", this.Log);
-        try this.consoleCustomFunction(ctx, consoleObject, "print", this.Log);
-        try this.consoleCustomFunction(ctx, consoleObject, "assert", this.Assert);
-        try this.consoleCustomFunction(ctx, consoleObject, "clear", this.Clear);
-        try this.consoleCustomFunction(ctx, consoleObject, "count", this.Count);
-        try this.consoleCustomFunction(ctx, consoleObject, "countReset", this.CountReset);
+        try this.consoleCustomFunction(ctx, consoleObject, constants.log, this.Log);
+        try this.consoleCustomFunction(ctx, consoleObject, constants.assert, this.Assert);
+        try this.consoleCustomFunction(ctx, consoleObject, constants.clear, this.Clear);
+        try this.consoleCustomFunction(ctx, consoleObject, constants.count, this.Count);
+        try this.consoleCustomFunction(ctx, consoleObject, constants.countReset, this.CountReset);
 
         defer counters.deinit();
 

@@ -29,6 +29,7 @@ pub const Console = struct {
         try this.consoleCustomFunction(ctx, consoleObject, "assert", this.Assert);
         try this.consoleCustomFunction(ctx, consoleObject, "clear", this.Clear);
         try this.consoleCustomFunction(ctx, consoleObject, "count", this.Count);
+        try this.consoleCustomFunction(ctx, consoleObject, "countReset", this.CountReset);
 
         defer counters.deinit();
 
@@ -164,6 +165,34 @@ pub const Console = struct {
         };
         std.debug.print("{s}: {}\n", .{ label, new_counter.count });
 
+        return jsc.JSValueMakeUndefined(ctx);
+    }
+
+    fn CountReset(ctx: jsc.JSContextRef, globalObject: jsc.JSObjectRef, thisObject: jsc.JSObjectRef, argumentsCount: usize, arguments: [*c]const jsc.JSValueRef, exception: [*c]jsc.JSValueRef) callconv(.C) jsc.JSValueRef {
+        _ = globalObject;
+        _ = thisObject;
+        _ = exception;
+
+        var i: usize = 0;
+        var label: []const u8 = "default";
+        defer allocator.free(label);
+
+        if (argumentsCount > 0) {
+            label = this.converJSVToString(ctx, arguments[0]) catch |err| {
+                std.debug.print("Err: {}\n", .{err});
+                return jsc.JSValueMakeUndefined(ctx);
+            };
+        }
+
+        while (i < counters.items.len) : (i += 1) {
+            if (std.mem.eql(u8, counters.items[i].label, label)) {
+                counters.items[i].count = 0;
+                return jsc.JSValueMakeUndefined(ctx);
+            } else {
+                std.debug.print("Warning: Count for \'{s}\' does not exist\n", .{label});
+                return jsc.JSValueMakeUndefined(ctx);
+            }
+        }
         return jsc.JSValueMakeUndefined(ctx);
     }
 };

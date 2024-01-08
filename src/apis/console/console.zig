@@ -2,21 +2,17 @@
 const std = @import("std");
 const jsc = @import("../../jsc/jsc.zig");
 
+const Counter = struct { label: []const u8, count: usize };
+
 // Define the Console structure
 pub const Console = struct {
     const this = @This();
+
     const allocator = std.heap.page_allocator;
+    // var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    // const allocator = gpa.allocator();
 
-    fn converJSVToString(ctx: jsc.JSContextRef, arguments: jsc.JSValueRef) ![]const u8 {
-        const arg = jsc.JSValueToStringCopy(ctx, arguments, null);
-        defer jsc.JSStringRelease(arg);
-
-        const buffer = try allocator.alloc(u8, jsc.JSStringGetMaximumUTF8CStringSize(arg));
-
-        const argLen = jsc.JSStringGetUTF8CString(arg, buffer.ptr, buffer.len);
-
-        return buffer[0 .. argLen - 1];
-    }
+    var counters = std.ArrayList(Counter).init(allocator);
 
     // Initialize the console
     pub fn init(ctx: jsc.JSContextRef, globalObject: jsc.JSObjectRef) !void {
@@ -32,8 +28,41 @@ pub const Console = struct {
         try this.consoleCustomFunction(ctx, consoleObject, "print", this.Log);
         try this.consoleCustomFunction(ctx, consoleObject, "assert", this.Assert);
         try this.consoleCustomFunction(ctx, consoleObject, "clear", this.Clear);
+        try this.consoleCustomFunction(ctx, consoleObject, "count", this.Count);
+
+        defer counters.deinit();
+
+        // for (counters.items) |value| {
+        //     allocator.free(value.label);
+        // }
+
+        // defer {
+        //     const deinit_status = gpa.deinit();
+        //     if (deinit_status == .leak) {
+        //         std.debug.print("memory leak \n", .{});
+        //     }
+        // }
     }
 
+    fn converJSVToString(ctx: jsc.JSContextRef, argument: jsc.JSValueRef) ![]const u8 {
+        // Get a copy of the JavaScript value as a string.
+        const arg = jsc.JSValueToStringCopy(ctx, argument, null);
+        defer jsc.JSStringRelease(arg);
+
+        // Allocate a buffer for the UTF-8 string.
+        const buffer = try allocator.alloc(u8, jsc.JSStringGetMaximumUTF8CStringSize(arg) - 1);
+        // defer allocator.free(buffer);
+
+        // Get the UTF-8 representation of the JavaScript string.
+        const argLen = jsc.JSStringGetUTF8CString(arg, buffer.ptr, buffer.len);
+
+        const str = try allocator.alloc(u8, argLen);
+        std.mem.copy(u8, str, buffer[0..argLen]);
+
+        // Return the dynamically allocated UTF-8 string.
+        // return buffer[0..argLen];
+        return str;
+    }
     // Define a custom function for the console
     fn consoleCustomFunction(ctx: jsc.JSContextRef, globalObject: jsc.JSObjectRef, functionName: []const u8, functionCallBack: jsc.JSObjectCallAsFunctionCallback) !void {
         // Create a function object and set it as a property of the global object
@@ -84,7 +113,7 @@ pub const Console = struct {
                 return jsc.JSValueMakeUndefined(ctx);
             };
             defer allocator.free(message);
-            
+
             std.debug.print("Assertion failed: {s}\n", .{message});
             return jsc.JSValueMakeUndefined(ctx);
         }
@@ -100,6 +129,41 @@ pub const Console = struct {
         _ = exception;
 
         std.debug.print("\x1B[H\x1B[2J", .{});
+        return jsc.JSValueMakeUndefined(ctx);
+    }
+
+    fn Count(ctx: jsc.JSContextRef, globalObject: jsc.JSObjectRef, thisObject: jsc.JSObjectRef, argumentsCount: usize, arguments: [*c]const jsc.JSValueRef, exception: [*c]jsc.JSValueRef) callconv(.C) jsc.JSValueRef {
+        _ = globalObject;
+        _ = thisObject;
+        _ = exception;
+
+        var i: usize = 0;
+
+        var label: []const u8 = "default";
+        defer allocator.free(label);
+
+        if (argumentsCount > 0) {
+            label = this.converJSVToString(ctx, arguments[0]) catch |err| {
+                std.debug.print("Err : {}\n", .{err});
+                return jsc.JSValueMakeUndefined(ctx);
+            };
+        }
+
+        while (i < counters.items.len) : (i += 1) {
+            if (std.mem.eql(u8, counters.items[i].label, label)) {
+                counters.items[i].count += 1;
+                std.debug.print("{s}: {}\n", .{ label, counters.items[i].count });
+                return jsc.JSValueMakeUndefined(ctx);
+            }
+        }
+
+        var new_counter = Counter{ .label = label, .count = 1 };
+        counters.append(new_counter) catch |err| {
+            std.debug.print("Err {}", .{err});
+            return jsc.JSValueMakeUndefined(ctx);
+        };
+        std.debug.print("{s}: {}\n", .{ label, new_counter.count });
+
         return jsc.JSValueMakeUndefined(ctx);
     }
 };

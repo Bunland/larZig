@@ -79,13 +79,13 @@ pub const Server = struct {
         defer jsc.JSStringRelease(arg);
 
         // Allocate a buffer for the UTF-8 string.
-        const buffer = try allocator.alloc(u8, jsc.JSStringGetMaximumUTF8CStringSize(arg));
+        const buffer = try allocator.alloc(u8, jsc.JSStringGetMaximumUTF8CStringSize(arg) - 1);
 
         // Get the UTF-8 representation of the JavaScript string.
         const argLen = jsc.JSStringGetUTF8CString(arg, buffer.ptr, buffer.len);
 
         // Return the dynamically allocated UTF-8 string.
-        return buffer[0 .. argLen - 1];
+        return buffer[0..argLen];
     }
 
     pub fn start(ctx: jsc.JSContextRef, globalObject: jsc.JSObjectRef, thisObject: jsc.JSObjectRef, argumentsCount: usize, arguments: [*c]const jsc.JSValueRef, execption: [*c]jsc.JSValueRef) callconv(.C) jsc.JSValueRef {

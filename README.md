@@ -8,7 +8,6 @@ A javascript runtime written in zig that uses javascriptcore as the javascript e
 ### Console Api Status
 
 ```typescript
-console.log(...) // ready
 console.assert(value[, ...message]) // ready
 console.clear() // ready
 console.count([label]) // ready
@@ -21,7 +20,7 @@ console.group([...label]) // soon
 console.groupCollapsed() // soon
 console.groupEnd() // soon
 console.info([data][, ...args]) // soon
-console.log([data][, ...args]) // soon
+console.log([data][, ...args]) // ready
 console.table(tabularData[, properties]) // soon
 console.time([label]) // soon
 console.timeEnd([label]) // soon

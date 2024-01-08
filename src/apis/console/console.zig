@@ -31,12 +31,13 @@ pub const Console = struct {
         try this.consoleCustomFunction(ctx, consoleObject, constants.clear, this.Clear);
         try this.consoleCustomFunction(ctx, consoleObject, constants.count, this.Count);
         try this.consoleCustomFunction(ctx, consoleObject, constants.countReset, this.CountReset);
+        try this.consoleCustomFunction(ctx, consoleObject, constants.debug, this.Log);
 
-        defer counters.deinit();
+        for (counters.items) |value| {
+            allocator.free(value.label);
+        }
 
-        // for (counters.items) |value| {
-        //     allocator.free(value.label);
-        // }
+        counters.deinit();
 
         // defer {
         //     const deinit_status = gpa.deinit();
@@ -56,15 +57,30 @@ pub const Console = struct {
         // defer allocator.free(buffer);
 
         // Get the UTF-8 representation of the JavaScript string.
-        const argLen = jsc.JSStringGetUTF8CString(arg, buffer.ptr, buffer.len);
-
-        const str = try allocator.alloc(u8, argLen);
-        std.mem.copy(u8, str, buffer[0..argLen]);
+        const arglen = jsc.JSStringGetUTF8CString(arg, buffer.ptr, buffer.len);
+        // const str = try allocator.alloc(u8, arglen);
+        // std.mem.copy(u8, str, buffer[0..arglen]);
 
         // Return the dynamically allocated UTF-8 string.
-        // return buffer[0..argLen];
-        return str;
+        return buffer[0..arglen];
+        // return str;
     }
+
+    fn converJSVToJson(ctx: jsc.JSContextRef, argument: jsc.JSValueRef) ![]const u8 {
+        const jsonString = jsc.JSValueCreateJSONString(ctx, argument, 0, null);
+        defer jsc.JSStringRelease(jsonString);
+
+        const buffer = try allocator.alloc(u8, jsc.JSStringGetMaximumUTF8CStringSize(jsonString) - 1);
+        // defer allocator.free(buffer);
+
+        const arglen = jsc.JSStringGetUTF8CString(jsonString, buffer.ptr, buffer.len);
+        // const str = try allocator.alloc(u8, arglen);
+        // std.mem.copy(u8, str, buffer[0..arglen]);
+
+        return buffer[0..arglen];
+        // return str;
+    }
+
     // Define a custom function for the console
     fn consoleCustomFunction(ctx: jsc.JSContextRef, globalObject: jsc.JSObjectRef, functionName: []const u8, functionCallBack: jsc.JSObjectCallAsFunctionCallback) !void {
         // Create a function object and set it as a property of the global object
@@ -75,27 +91,35 @@ pub const Console = struct {
         jsc.JSObjectSetProperty(ctx, globalObject, logFunctionName, logFunctionObject, jsc.kJSPropertyAttributeNone, null);
     }
 
-    // Define the Log function
-    fn Log(context: jsc.JSContextRef, globalObject: jsc.JSObjectRef, thisObject: jsc.JSObjectRef, argumentsCount: usize, arguments: [*c]const jsc.JSValueRef, exception: [*c]jsc.JSValueRef) callconv(.C) jsc.JSValueRef {
+    fn Log(ctx: jsc.JSContextRef, globalObject: jsc.JSObjectRef, thisObject: jsc.JSObjectRef, argumentsCount: usize, arguments: [*c]const jsc.JSValueRef, exception: [*c]jsc.JSValueRef) callconv(.C) jsc.JSValueRef {
+        _ = exception;
+
         _ = globalObject;
         _ = thisObject;
         // Loop through the arguments and print them
         var i: usize = 0;
         while (i < argumentsCount) : (i += 1) {
-            const string = jsc.JSValueToStringCopy(context, arguments[i], exception);
-            var buffer = allocator.alloc(u8, jsc.JSStringGetMaximumUTF8CStringSize(string)) catch |err| {
-                std.debug.print("Error: {}\n", .{err});
-                return jsc.JSValueMakeUndefined(context);
-            };
-            defer allocator.free(buffer);
-            const string_length = jsc.JSStringGetUTF8CString(string, buffer.ptr, buffer.len);
-            std.debug.print("{s}", .{buffer[0..string_length]});
-            jsc.JSStringRelease(string);
+            // Check if the argument is an object and not null or undefined
+            if (jsc.JSValueIsObject(ctx, arguments[i]) and !jsc.JSValueIsNull(ctx, arguments[i]) and !jsc.JSValueIsUndefined(ctx, arguments[i])) {
+                const str = this.converJSVToJson(ctx, arguments[i]) catch |err| {
+                    std.debug.print("Error: {}\n", .{err});
+                    return jsc.JSValueMakeUndefined(ctx);
+                };
+                defer allocator.free(str);
+                std.debug.print("{s} ", .{str});
+            } else {
+                const str = this.converJSVToString(ctx, arguments[i]) catch |err| {
+                    std.debug.print("Error: {}\n", .{err});
+                    return jsc.JSValueMakeUndefined(ctx);
+                };
+                defer allocator.free(str);
+                std.debug.print("{s} ", .{str});
+            }
         }
 
         // Print a newline and return undefined
         std.debug.print("\n", .{});
-        return jsc.JSValueMakeUndefined(context);
+        return jsc.JSValueMakeUndefined(ctx);
     }
 
     fn Assert(ctx: jsc.JSContextRef, globalObject: jsc.JSObjectRef, thisObject: jsc.JSObjectRef, argumentsCount: usize, arguments: [*c]const jsc.JSValueRef, exception: [*c]jsc.JSValueRef) callconv(.C) jsc.JSValueRef {
@@ -142,7 +166,7 @@ pub const Console = struct {
         var i: usize = 0;
 
         var label: []const u8 = "default";
-        defer allocator.free(label);
+        // defer allocator.free(label);
 
         if (argumentsCount > 0) {
             label = this.converJSVToString(ctx, arguments[0]) catch |err| {
@@ -165,7 +189,6 @@ pub const Console = struct {
             return jsc.JSValueMakeUndefined(ctx);
         };
         std.debug.print("{s}: {}\n", .{ label, new_counter.count });
-
         return jsc.JSValueMakeUndefined(ctx);
     }
 

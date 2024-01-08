@@ -1,7 +1,9 @@
 # Lar Runtime
 
-![_c7474e27-6820-42bf-8c54-a96ddaa916a6](https://github.com/vitalspace/larZig/assets/29004070/fff48450-5bfc-454d-8d62-e6c3ac2de27d)
 
+<p align="center" width="50%">
+  <img src="https://github.com/vitalspace/larZig/assets/29004070/fff48450-5bfc-454d-8d62-e6c3ac2de27d" alt="moeban" />
+</p>
 
 A javascript runtime written in zig that uses javascriptcore as the javascript engine.
 

@@ -16,7 +16,7 @@ console.assert(value[, ...message]) // ready
 console.clear() // ready
 console.count([label]) // ready
 console.countReset([label]) // ready
-console.debug(data[, ...args]) // soon
+console.debug(data[, ...args]) // ready
 console.dir(obj[, options]) // soon
 console.dirxml(...data) // soon
 console.error([data][, ...args]) // soon

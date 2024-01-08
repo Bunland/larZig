@@ -2,7 +2,7 @@
 
 
 <p align="center" width="100%">
-  <img width="250" src="https://github.com/vitalspace/larZig/assets/29004070/fff48450-5bfc-454d-8d62-e6c3ac2de27d" alt="moeban" />
+  <img width="500" src="https://github.com/vitalspace/larZig/assets/29004070/fff48450-5bfc-454d-8d62-e6c3ac2de27d" alt="moeban" />
 </p>
 
 A javascript runtime written in zig that uses javascriptcore as the javascript engine.

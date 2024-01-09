@@ -133,7 +133,13 @@ pub const Console = struct {
             if (jsc.JSValueIsObject(ctx, arguments[i]) and !jsc.JSValueIsNull(ctx, arguments[i]) and !jsc.JSValueIsUndefined(ctx, arguments[i])) {
                 // Check if the object is a RegExp
                 if (isRegExp(ctx, arguments[i])) {
-                    const str = convertRegExpToString(ctx, arguments[i]) catch |err| {
+                    // const str = convertRegExpToString(ctx, arguments[i]) catch |err| {
+                    //     std.debug.print("Error: {}\n", .{err});
+                    //     return jsc.JSValueMakeUndefined(ctx);
+                    // };
+                    // defer allocator.free(str);
+                    // std.debug.print("{s} ", .{str});
+                    const str = this.convertJSVToString(ctx, arguments[i]) catch |err| {
                         std.debug.print("Error: {}\n", .{err});
                         return jsc.JSValueMakeUndefined(ctx);
                     };
@@ -171,16 +177,16 @@ pub const Console = struct {
         return isInstance;
     }
 
-    fn convertRegExpToString(ctx: jsc.JSContextRef, value: jsc.JSValueRef) ![]const u8 {
-        const toStringString = jsc.JSStringCreateWithUTF8CString("toString");
-        defer jsc.JSStringRelease(toStringString);
-        const valueObject = jsc.JSValueToObject(ctx, value, null) orelse return error.CouldNotConvertValueToObject;
-        const toStringFunctionValue = jsc.JSObjectGetProperty(ctx, valueObject, toStringString, null);
-        const toStringFunction = @as(*jsc.struct_OpaqueJSValue, @constCast(toStringFunctionValue));
-        const resultStringValue = jsc.JSObjectCallAsFunction(ctx, toStringFunction, valueObject, 0, null, null);
-        const resultString = @as(*jsc.struct_OpaqueJSValue, @constCast(resultStringValue));
-        return convertJSVToString(ctx, resultString);
-    }
+    // fn convertRegExpToString(ctx: jsc.JSContextRef, value: jsc.JSValueRef) ![]const u8 {
+    //     const toStringString = jsc.JSStringCreateWithUTF8CString("toString");
+    //     defer jsc.JSStringRelease(toStringString);
+    //     const valueObject = jsc.JSValueToObject(ctx, value, null) orelse return error.CouldNotConvertValueToObject;
+    //     const toStringFunctionValue = jsc.JSObjectGetProperty(ctx, valueObject, toStringString, null);
+    //     const toStringFunction = @as(*jsc.struct_OpaqueJSValue, @constCast(toStringFunctionValue));
+    //     const resultStringValue = jsc.JSObjectCallAsFunction(ctx, toStringFunction, valueObject, 0, null, null);
+    //     const resultString = @as(*jsc.struct_OpaqueJSValue, @constCast(resultStringValue));
+    //     return convertJSVToString(ctx, resultString);
+    // }
 
     fn Assert(ctx: jsc.JSContextRef, globalObject: jsc.JSObjectRef, thisObject: jsc.JSObjectRef, argumentsCount: usize, arguments: [*c]const jsc.JSValueRef, exception: [*c]jsc.JSValueRef) callconv(.C) jsc.JSValueRef {
         _ = globalObject;

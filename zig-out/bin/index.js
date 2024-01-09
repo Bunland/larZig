@@ -85,9 +85,6 @@
 // console.count("ejemplo")
 
 // console.log("hello", { id: 2, name: "lucas" });
-// const arr = [1, "2", 3, { id: 2, name: "lucas" }];
-
-// console.log(arr)
 // console.debug(arr[3].name);
 
 // console.count({id: 2});
@@ -97,3 +94,14 @@
 //   console.count("lol")
 // }
 
+// const arr = [1, "2", 3, { id: 2, name: "lucas" }];
+// console.log(arr);
+
+// const regex = new RegExp("[a-zA-Z]+", "g");
+// console.log(regex);
+
+for (let index = 0; index < 1000000; index++) {
+    // const element = array[index];
+    console.log(index)
+    
+}

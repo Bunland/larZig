@@ -33,11 +33,11 @@ pub const Console = struct {
         try this.consoleCustomFunction(ctx, consoleObject, constants.countReset, this.CountReset);
         try this.consoleCustomFunction(ctx, consoleObject, constants.debug, this.Log);
 
-        for (counters.items) |value| {
-            allocator.free(value.label);
-        }
+        defer counters.deinit();
 
-        counters.deinit();
+        for (counters.items) |value| {
+            defer allocator.free(value.label);
+        }
 
         // defer {
         //     const deinit_status = gpa.deinit();
@@ -122,6 +122,26 @@ pub const Console = struct {
     //     return jsc.JSValueMakeUndefined(ctx);
     // }
 
+    fn isRegExp(ctx: jsc.JSContextRef, value: jsc.JSValueRef) bool {
+        const regexpString = jsc.JSStringCreateWithUTF8CString("RegExp");
+        defer jsc.JSStringRelease(regexpString);
+        const regexpConstructorValue = jsc.JSObjectGetProperty(ctx, jsc.JSContextGetGlobalObject(ctx), regexpString, null);
+        const regexpConstructor = @as(*jsc.struct_OpaqueJSValue, @constCast(regexpConstructorValue));
+        const isInstance = jsc.JSValueIsInstanceOfConstructor(ctx, value, regexpConstructor, null);
+        return isInstance;
+    }
+
+    // fn convertRegExpToString(ctx: jsc.JSContextRef, value: jsc.JSValueRef) ![]const u8 {
+    //     const toStringString = jsc.JSStringCreateWithUTF8CString("toString");
+    //     defer jsc.JSStringRelease(toStringString);
+    //     const valueObject = jsc.JSValueToObject(ctx, value, null) orelse return error.CouldNotConvertValueToObject;
+    //     const toStringFunctionValue = jsc.JSObjectGetProperty(ctx, valueObject, toStringString, null);
+    //     const toStringFunction = @as(*jsc.struct_OpaqueJSValue, @constCast(toStringFunctionValue));
+    //     const resultStringValue = jsc.JSObjectCallAsFunction(ctx, toStringFunction, valueObject, 0, null, null);
+    //     const resultString = @as(*jsc.struct_OpaqueJSValue, @constCast(resultStringValue));
+    //     return convertJSVToString(ctx, resultString);
+    // }
+
     fn Log(ctx: jsc.JSContextRef, globalObject: jsc.JSObjectRef, thisObject: jsc.JSObjectRef, argumentsCount: usize, arguments: [*c]const jsc.JSValueRef, exception: [*c]jsc.JSValueRef) callconv(.C) jsc.JSValueRef {
         _ = exception;
         _ = globalObject;
@@ -133,7 +153,13 @@ pub const Console = struct {
             if (jsc.JSValueIsObject(ctx, arguments[i]) and !jsc.JSValueIsNull(ctx, arguments[i]) and !jsc.JSValueIsUndefined(ctx, arguments[i])) {
                 // Check if the object is a RegExp
                 if (isRegExp(ctx, arguments[i])) {
-                    const str = convertRegExpToString(ctx, arguments[i]) catch |err| {
+                    // const str = convertRegExpToString(ctx, arguments[i]) catch |err| {
+                    //     std.debug.print("Error: {}\n", .{err});
+                    //     return jsc.JSValueMakeUndefined(ctx);
+                    // };
+                    // defer allocator.free(str);
+                    // std.debug.print("{s} ", .{str});
+                    const str = this.convertJSVToString(ctx, arguments[i]) catch |err| {
                         std.debug.print("Error: {}\n", .{err});
                         return jsc.JSValueMakeUndefined(ctx);
                     };
@@ -145,7 +171,7 @@ pub const Console = struct {
                         return jsc.JSValueMakeUndefined(ctx);
                     };
                     defer allocator.free(str);
-                    std.debug.print("here: {s} ", .{str});
+                    std.debug.print("{s} ", .{str});
                 }
             } else {
                 const str = this.convertJSVToString(ctx, arguments[i]) catch |err| {
@@ -160,26 +186,6 @@ pub const Console = struct {
         // Print a newline and return undefined
         std.debug.print("\n", .{});
         return jsc.JSValueMakeUndefined(ctx);
-    }
-
-    fn isRegExp(ctx: jsc.JSContextRef, value: jsc.JSValueRef) bool {
-        const regexpString = jsc.JSStringCreateWithUTF8CString("RegExp");
-        defer jsc.JSStringRelease(regexpString);
-        const regexpConstructorValue = jsc.JSObjectGetProperty(ctx, jsc.JSContextGetGlobalObject(ctx), regexpString, null);
-        const regexpConstructor = @as(*jsc.struct_OpaqueJSValue, @constCast(regexpConstructorValue));
-        const isInstance = jsc.JSValueIsInstanceOfConstructor(ctx, value, regexpConstructor, null);
-        return isInstance;
-    }
-
-    fn convertRegExpToString(ctx: jsc.JSContextRef, value: jsc.JSValueRef) ![]const u8 {
-        const toStringString = jsc.JSStringCreateWithUTF8CString("toString");
-        defer jsc.JSStringRelease(toStringString);
-        const valueObject = jsc.JSValueToObject(ctx, value, null) orelse return error.CouldNotConvertValueToObject;
-        const toStringFunctionValue = jsc.JSObjectGetProperty(ctx, valueObject, toStringString, null);
-        const toStringFunction = @as(*jsc.struct_OpaqueJSValue, @constCast(toStringFunctionValue));
-        const resultStringValue = jsc.JSObjectCallAsFunction(ctx, toStringFunction, valueObject, 0, null, null);
-        const resultString = @as(*jsc.struct_OpaqueJSValue, @constCast(resultStringValue));
-        return convertJSVToString(ctx, resultString);
     }
 
     fn Assert(ctx: jsc.JSContextRef, globalObject: jsc.JSObjectRef, thisObject: jsc.JSObjectRef, argumentsCount: usize, arguments: [*c]const jsc.JSValueRef, exception: [*c]jsc.JSValueRef) callconv(.C) jsc.JSValueRef {
@@ -259,7 +265,7 @@ pub const Console = struct {
 
         var i: usize = 0;
         var label: []const u8 = "default";
-        defer allocator.free(label);
+        // defer allocator.free(label);
 
         if (argumentsCount > 0) {
             label = this.convertJSVToString(ctx, arguments[0]) catch |err| {
@@ -268,15 +274,21 @@ pub const Console = struct {
             };
         }
 
+        var found: bool = false;
+
         while (i < counters.items.len) : (i += 1) {
             if (std.mem.eql(u8, counters.items[i].label, label)) {
                 counters.items[i].count = 0;
-                return jsc.JSValueMakeUndefined(ctx);
-            } else {
-                std.debug.print("Warning: Count for \'{s}\' does not exist\n", .{label});
-                return jsc.JSValueMakeUndefined(ctx);
+                found = true;
+                break;
             }
         }
+
+        if (!found) {
+            std.debug.print("Warning: Count for \'{s}\' does not exist\n", .{label});
+            return jsc.JSValueMakeUndefined(ctx);
+        }
+
         return jsc.JSValueMakeUndefined(ctx);
     }
 };

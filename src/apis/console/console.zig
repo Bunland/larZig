@@ -122,6 +122,26 @@ pub const Console = struct {
     //     return jsc.JSValueMakeUndefined(ctx);
     // }
 
+    fn isRegExp(ctx: jsc.JSContextRef, value: jsc.JSValueRef) bool {
+        const regexpString = jsc.JSStringCreateWithUTF8CString("RegExp");
+        defer jsc.JSStringRelease(regexpString);
+        const regexpConstructorValue = jsc.JSObjectGetProperty(ctx, jsc.JSContextGetGlobalObject(ctx), regexpString, null);
+        const regexpConstructor = @as(*jsc.struct_OpaqueJSValue, @constCast(regexpConstructorValue));
+        const isInstance = jsc.JSValueIsInstanceOfConstructor(ctx, value, regexpConstructor, null);
+        return isInstance;
+    }
+
+    // fn convertRegExpToString(ctx: jsc.JSContextRef, value: jsc.JSValueRef) ![]const u8 {
+    //     const toStringString = jsc.JSStringCreateWithUTF8CString("toString");
+    //     defer jsc.JSStringRelease(toStringString);
+    //     const valueObject = jsc.JSValueToObject(ctx, value, null) orelse return error.CouldNotConvertValueToObject;
+    //     const toStringFunctionValue = jsc.JSObjectGetProperty(ctx, valueObject, toStringString, null);
+    //     const toStringFunction = @as(*jsc.struct_OpaqueJSValue, @constCast(toStringFunctionValue));
+    //     const resultStringValue = jsc.JSObjectCallAsFunction(ctx, toStringFunction, valueObject, 0, null, null);
+    //     const resultString = @as(*jsc.struct_OpaqueJSValue, @constCast(resultStringValue));
+    //     return convertJSVToString(ctx, resultString);
+    // }
+
     fn Log(ctx: jsc.JSContextRef, globalObject: jsc.JSObjectRef, thisObject: jsc.JSObjectRef, argumentsCount: usize, arguments: [*c]const jsc.JSValueRef, exception: [*c]jsc.JSValueRef) callconv(.C) jsc.JSValueRef {
         _ = exception;
         _ = globalObject;
@@ -167,26 +187,6 @@ pub const Console = struct {
         std.debug.print("\n", .{});
         return jsc.JSValueMakeUndefined(ctx);
     }
-
-    fn isRegExp(ctx: jsc.JSContextRef, value: jsc.JSValueRef) bool {
-        const regexpString = jsc.JSStringCreateWithUTF8CString("RegExp");
-        defer jsc.JSStringRelease(regexpString);
-        const regexpConstructorValue = jsc.JSObjectGetProperty(ctx, jsc.JSContextGetGlobalObject(ctx), regexpString, null);
-        const regexpConstructor = @as(*jsc.struct_OpaqueJSValue, @constCast(regexpConstructorValue));
-        const isInstance = jsc.JSValueIsInstanceOfConstructor(ctx, value, regexpConstructor, null);
-        return isInstance;
-    }
-
-    // fn convertRegExpToString(ctx: jsc.JSContextRef, value: jsc.JSValueRef) ![]const u8 {
-    //     const toStringString = jsc.JSStringCreateWithUTF8CString("toString");
-    //     defer jsc.JSStringRelease(toStringString);
-    //     const valueObject = jsc.JSValueToObject(ctx, value, null) orelse return error.CouldNotConvertValueToObject;
-    //     const toStringFunctionValue = jsc.JSObjectGetProperty(ctx, valueObject, toStringString, null);
-    //     const toStringFunction = @as(*jsc.struct_OpaqueJSValue, @constCast(toStringFunctionValue));
-    //     const resultStringValue = jsc.JSObjectCallAsFunction(ctx, toStringFunction, valueObject, 0, null, null);
-    //     const resultString = @as(*jsc.struct_OpaqueJSValue, @constCast(resultStringValue));
-    //     return convertJSVToString(ctx, resultString);
-    // }
 
     fn Assert(ctx: jsc.JSContextRef, globalObject: jsc.JSObjectRef, thisObject: jsc.JSObjectRef, argumentsCount: usize, arguments: [*c]const jsc.JSValueRef, exception: [*c]jsc.JSValueRef) callconv(.C) jsc.JSValueRef {
         _ = globalObject;

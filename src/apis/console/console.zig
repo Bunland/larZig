@@ -33,11 +33,11 @@ pub const Console = struct {
         try this.consoleCustomFunction(ctx, consoleObject, constants.countReset, this.CountReset);
         try this.consoleCustomFunction(ctx, consoleObject, constants.debug, this.Log);
 
-        for (counters.items) |value| {
-            allocator.free(value.label);
-        }
+        defer counters.deinit();
 
-        counters.deinit();
+        for (counters.items) |value| {
+            defer allocator.free(value.label);
+        }
 
         // defer {
         //     const deinit_status = gpa.deinit();
@@ -171,7 +171,7 @@ pub const Console = struct {
                         return jsc.JSValueMakeUndefined(ctx);
                     };
                     defer allocator.free(str);
-                    std.debug.print("here: {s} ", .{str});
+                    std.debug.print("{s} ", .{str});
                 }
             } else {
                 const str = this.convertJSVToString(ctx, arguments[i]) catch |err| {
@@ -265,7 +265,7 @@ pub const Console = struct {
 
         var i: usize = 0;
         var label: []const u8 = "default";
-        defer allocator.free(label);
+        // defer allocator.free(label);
 
         if (argumentsCount > 0) {
             label = this.convertJSVToString(ctx, arguments[0]) catch |err| {
@@ -274,15 +274,21 @@ pub const Console = struct {
             };
         }
 
+        var found: bool = false;
+
         while (i < counters.items.len) : (i += 1) {
             if (std.mem.eql(u8, counters.items[i].label, label)) {
                 counters.items[i].count = 0;
-                return jsc.JSValueMakeUndefined(ctx);
-            } else {
-                std.debug.print("Warning: Count for \'{s}\' does not exist\n", .{label});
-                return jsc.JSValueMakeUndefined(ctx);
+                found = true;
+                break;
             }
         }
+
+        if (!found) {
+            std.debug.print("Warning: Count for \'{s}\' does not exist\n", .{label});
+            return jsc.JSValueMakeUndefined(ctx);
+        }
+
         return jsc.JSValueMakeUndefined(ctx);
     }
 };

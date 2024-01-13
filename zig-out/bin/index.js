@@ -100,15 +100,35 @@
 // const regex = new RegExp("[a-zA-Z]+", "g");
 // console.log(regex);
 
-console.count()
-console.count("ejemplo")
-console.count("ejemplo")
-console.countReset("ejemplo")
-console.countReset()
-console.count("ejemplo 2")
-console.count("ejemplo 2")
-console.countReset("ejemplo 2")
-console.count("ejemplo 2")
-console.countReset("")
-console.count()
-console.count("ejemplo")
+// console.count()
+// console.count("ejemplo")
+// console.count("ejemplo")
+// console.countReset("ejemplo")
+// console.countReset()
+// console.count("ejemplo 2")
+// console.count("ejemplo 2")
+// console.countReset("ejemplo 2")
+// console.count("ejemplo 2")
+// console.countReset("")
+// console.count()
+// console.count("ejemplo")
+
+const regex = new RegExp("[a-zA-Z]+", "g");
+
+// const customError = new Error("Este es un error personalizado");
+// console.log(customError);
+
+// const arr = [1, "2", 3, { id: 2, name: "lucas" }];
+// console.log(arr);
+const currentDate = new Date();
+console.log(currentDate);
+
+// const some = () => 8 + 8;
+
+// function some() {
+//     return 8 + 8; 
+// }
+
+// console.log("lal", arr, regex)
+
+// console.log(some)

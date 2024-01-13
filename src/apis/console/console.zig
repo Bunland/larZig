@@ -91,99 +91,55 @@ pub const Console = struct {
         jsc.JSObjectSetProperty(ctx, globalObject, logFunctionName, logFunctionObject, jsc.kJSPropertyAttributeNone, null);
     }
 
-    // fn Log(ctx: jsc.JSContextRef, globalObject: jsc.JSObjectRef, thisObject: jsc.JSObjectRef, argumentsCount: usize, arguments: [*c]const jsc.JSValueRef, exception: [*c]jsc.JSValueRef) callconv(.C) jsc.JSValueRef {
-    //     _ = exception;
-
-    //     _ = globalObject;
-    //     _ = thisObject;
-    //     // Loop through the arguments and print them
-    //     var i: usize = 0;
-    //     while (i < argumentsCount) : (i += 1) {
-    //         // Check if the argument is an object and not null or undefined
-    //         // if (jsc.JSValueIsObject(ctx, arguments[i]) and !jsc.JSValueIsNull(ctx, arguments[i]) and !jsc.JSValueIsUndefined(ctx, arguments[i])) {
-    //         // const str = this.convertJSVToJson(ctx, arguments[i]) catch |err| {
-    //         // std.debug.print("Error: {}\n", .{err});
-    //         // return jsc.JSValueMakeUndefined(ctx);
-    //         // };
-    //         // defer allocator.free(str);
-    //         // std.debug.print("{s} ", .{str});
-    //         // } else {
-    //         const str = this.convertJSVToString(ctx, arguments[i]) catch |err| {
-    //             std.debug.print("Error: {}\n", .{err});
-    //             return jsc.JSValueMakeUndefined(ctx);
-    //         };
-    //         defer allocator.free(str);
-    //         std.debug.print("{s} ", .{str});
-    //         // }
-    //     }
-
-    //     // Print a newline and return undefined
-    //     std.debug.print("\n", .{});
-    //     return jsc.JSValueMakeUndefined(ctx);
-    // }
-
-    fn isRegExp(ctx: jsc.JSContextRef, value: jsc.JSValueRef) bool {
-        const regexpString = jsc.JSStringCreateWithUTF8CString("RegExp");
-        defer jsc.JSStringRelease(regexpString);
-        const regexpConstructorValue = jsc.JSObjectGetProperty(ctx, jsc.JSContextGetGlobalObject(ctx), regexpString, null);
-        const regexpConstructor = @as(*jsc.struct_OpaqueJSValue, @constCast(regexpConstructorValue));
-        const isInstance = jsc.JSValueIsInstanceOfConstructor(ctx, value, regexpConstructor, null);
+    fn isInstanceOf(ctx: jsc.JSContextRef, value: jsc.JSValueRef, instanceType: [*]const u8) bool {
+        const instanceTypeString = jsc.JSStringCreateWithUTF8CString(instanceType);
+        defer jsc.JSStringRelease(instanceTypeString);
+        const instanceTypeValue = jsc.JSObjectGetProperty(ctx, jsc.JSContextGetGlobalObject(ctx), instanceTypeString, null);
+        const instanceTypeConstructor = @as(*jsc.struct_OpaqueJSValue, @constCast(instanceTypeValue));
+        const isInstance = jsc.JSValueIsInstanceOfConstructor(ctx, value, instanceTypeConstructor, null);
         return isInstance;
     }
-
-    // fn convertRegExpToString(ctx: jsc.JSContextRef, value: jsc.JSValueRef) ![]const u8 {
-    //     const toStringString = jsc.JSStringCreateWithUTF8CString("toString");
-    //     defer jsc.JSStringRelease(toStringString);
-    //     const valueObject = jsc.JSValueToObject(ctx, value, null) orelse return error.CouldNotConvertValueToObject;
-    //     const toStringFunctionValue = jsc.JSObjectGetProperty(ctx, valueObject, toStringString, null);
-    //     const toStringFunction = @as(*jsc.struct_OpaqueJSValue, @constCast(toStringFunctionValue));
-    //     const resultStringValue = jsc.JSObjectCallAsFunction(ctx, toStringFunction, valueObject, 0, null, null);
-    //     const resultString = @as(*jsc.struct_OpaqueJSValue, @constCast(resultStringValue));
-    //     return convertJSVToString(ctx, resultString);
-    // }
 
     fn Log(ctx: jsc.JSContextRef, globalObject: jsc.JSObjectRef, thisObject: jsc.JSObjectRef, argumentsCount: usize, arguments: [*c]const jsc.JSValueRef, exception: [*c]jsc.JSValueRef) callconv(.C) jsc.JSValueRef {
         _ = exception;
         _ = globalObject;
         _ = thisObject;
-        // Loop through the arguments and print them
         var i: usize = 0;
         while (i < argumentsCount) : (i += 1) {
-            // Check if the argument is an object and not null or undefined
             if (jsc.JSValueIsObject(ctx, arguments[i]) and !jsc.JSValueIsNull(ctx, arguments[i]) and !jsc.JSValueIsUndefined(ctx, arguments[i])) {
-                // Check if the object is a RegExp
-                if (isRegExp(ctx, arguments[i])) {
-                    // const str = convertRegExpToString(ctx, arguments[i]) catch |err| {
-                    //     std.debug.print("Error: {}\n", .{err});
-                    //     return jsc.JSValueMakeUndefined(ctx);
-                    // };
-                    // defer allocator.free(str);
-                    // std.debug.print("{s} ", .{str});
-                    const str = this.convertJSVToString(ctx, arguments[i]) catch |err| {
-                        std.debug.print("Error: {}\n", .{err});
+                if (isInstanceOf(ctx, arguments[i], "Error") or
+                    isInstanceOf(ctx, arguments[i], "RegExp") or
+                    isInstanceOf(ctx, arguments[i], "Date") or
+                    isInstanceOf(ctx, arguments[i], "Function") or
+                    isInstanceOf(ctx, arguments[i], "Promise") or
+                    isInstanceOf(ctx, arguments[i], "Map") or
+                    isInstanceOf(ctx, arguments[i], "Set") or
+                    isInstanceOf(ctx, arguments[i], "Int32Array"))
+                {
+                    const str = convertJSVToString(ctx, arguments[i]) catch |err| {
+                        std.debug.print("Err {}", .{err});
                         return jsc.JSValueMakeUndefined(ctx);
                     };
                     defer allocator.free(str);
                     std.debug.print("{s} ", .{str});
                 } else {
-                    const str = this.convertJSVToJson(ctx, arguments[i]) catch |err| {
-                        std.debug.print("Error: {}\n", .{err});
+                    const str = convertJSVToJson(ctx, arguments[i]) catch |err| {
+                        std.debug.print("Err {}", .{err});
                         return jsc.JSValueMakeUndefined(ctx);
                     };
                     defer allocator.free(str);
+
                     std.debug.print("{s} ", .{str});
                 }
             } else {
-                const str = this.convertJSVToString(ctx, arguments[i]) catch |err| {
-                    std.debug.print("Error: {}\n", .{err});
+                const str = convertJSVToString(ctx, arguments[i]) catch |err| {
+                    std.debug.print("Err {}", .{err});
                     return jsc.JSValueMakeUndefined(ctx);
                 };
                 defer allocator.free(str);
                 std.debug.print("{s} ", .{str});
             }
         }
-
-        // Print a newline and return undefined
         std.debug.print("\n", .{});
         return jsc.JSValueMakeUndefined(ctx);
     }

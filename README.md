@@ -42,6 +42,13 @@ lar.existsFile([path]) // ready
 lar.removeFile([path]) // ready
 ```
 
+
+### Shell Api Status
+
+```typescript
+lar.shell("ls -l") // ready
+```
+
 ### Learning Project
 
 This is a personal learning project focused on understanding how JavaScript runtimes written in C, Go, or Zig are created. As such, it's not recommended to use the Lar Runtime for production purposes.

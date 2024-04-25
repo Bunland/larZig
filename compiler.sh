@@ -15,6 +15,6 @@ zig build
 
 cd ./zig-out/bin/ 
 
-./lar run index.js               
+./lar run x.js               
 
 cd ../../

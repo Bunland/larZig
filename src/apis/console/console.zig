@@ -95,7 +95,7 @@ pub const Console = struct {
         const instanceTypeString = jsc.JSStringCreateWithUTF8CString(instanceType);
         defer jsc.JSStringRelease(instanceTypeString);
         const instanceTypeValue = jsc.JSObjectGetProperty(ctx, jsc.JSContextGetGlobalObject(ctx), instanceTypeString, null);
-        const instanceTypeConstructor = @as(*jsc.struct_OpaqueJSValue, @constCast(instanceTypeValue));
+        const instanceTypeConstructor = @as(*jsc.struct_OpaqueJSValue, @constCast(instanceTypeValue).?);
         const isInstance = jsc.JSValueIsInstanceOfConstructor(ctx, value, instanceTypeConstructor, null);
         return isInstance;
     }
@@ -188,7 +188,6 @@ pub const Console = struct {
         var i: usize = 0;
 
         var label: []const u8 = "default";
-        // defer allocator.free(label);
 
         if (argumentsCount > 0) {
             label = this.convertJSVToString(ctx, arguments[0]) catch |err| {
@@ -200,12 +199,12 @@ pub const Console = struct {
         while (i < counters.items.len) : (i += 1) {
             if (std.mem.eql(u8, counters.items[i].label, label)) {
                 counters.items[i].count += 1;
-                std.debug.print("{s}: {}\n", .{ label, counters.items[i].count });
+                std.debug.print("{s}: {d}\n", .{ label, counters.items[i].count });
                 return jsc.JSValueMakeUndefined(ctx);
             }
         }
 
-        var new_counter = Counter{ .label = label, .count = 1 };
+        const new_counter = Counter{ .label = label, .count = 1 };
         counters.append(new_counter) catch |err| {
             std.debug.print("Err {}", .{err});
             return jsc.JSValueMakeUndefined(ctx);

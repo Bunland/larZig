@@ -1,4 +1,4 @@
-// console.log(lar.writeFile("alv.txt", "lucas"));
+console.log(lar.writeFile("file.txt", "lucas"));
 // console.log(lar.readFile("alv.txt"));
 // console.log(lar.existsFile("alv.txt"));
 // console.log(lar.removeFile("alv.txt"));
@@ -113,15 +113,15 @@
 // console.count()
 // console.count("ejemplo")
 
-const regex = new RegExp("[a-zA-Z]+", "g");
+// const regex = new RegExp("[a-zA-Z]+", "g");
 
 // const customError = new Error("Este es un error personalizado");
 // console.log(customError);
 
 // const arr = [1, "2", 3, { id: 2, name: "lucas" }];
 // console.log(arr);
-const currentDate = new Date();
-console.log(currentDate);
+// const currentDate = new Date();
+// console.log(currentDate);
 
 // const some = () => 8 + 8;
 

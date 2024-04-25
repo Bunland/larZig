@@ -21,13 +21,13 @@ pub const Fs = struct {
         defer jsc.JSStringRelease(arg);
 
         // Allocate a buffer for the UTF-8 string.
-        const buffer = try allocator.alloc(u8, jsc.JSStringGetMaximumUTF8CStringSize(arg) - 1);
+        const buffer = try allocator.alloc(u8, jsc.JSStringGetMaximumUTF8CStringSize(arg));
 
         // Get the UTF-8 representation of the JavaScript string.
         const argLen = jsc.JSStringGetUTF8CString(arg, buffer.ptr, buffer.len);
 
         // Return the dynamically allocated UTF-8 string.
-        return buffer[0..argLen];
+        return buffer[0 .. argLen - 1];
     }
 
     /// Writes content to a file.
@@ -62,23 +62,24 @@ pub const Fs = struct {
 
         // Extract and convert the file name from the first argument.
         const fileName = this.converJSVToString(ctx, arguments[0]) catch |err| {
-            std.debug.print("Error: {}\n", .{err});
+            std.debug.print("{}\n", .{err});
             return jsc.JSValueMakeUndefined(ctx);
         };
         defer allocator.free(fileName);
 
         // Extract and convert the content from the second argument.
         const content = this.converJSVToString(ctx, arguments[1]) catch |err| {
-            std.debug.print("Error: {}\n", .{err});
+            std.debug.print("{}\n", .{err});
             return jsc.JSValueMakeUndefined(ctx);
         };
         defer allocator.free(content);
 
-        // Create a file in the current working directory for reading.
+        // // Create a file in the current working directory for reading.
         const file = std.fs.cwd().createFile(fileName, .{ .read = true }) catch |err| {
             std.debug.print("Could not create file.\n Err: {}\n", .{err});
             return jsc.JSValueMakeUndefined(ctx);
         };
+
         defer file.close();
 
         // Write the content to the file.
@@ -141,8 +142,13 @@ pub const Fs = struct {
             return jsc.JSValueMakeUndefined(ctx);
         };
 
+        defer allocator.free(str);
+
         // Copy the file content to the buffer and null-terminate.
-        std.mem.copy(u8, str, file);
+        // @memcpy(str, file);
+
+        std.mem.copyForwards(u8, str, file);
+
         str[file.len] = 0;
 
         // Create a JavaScript string from the buffer.

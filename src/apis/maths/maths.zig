@@ -14,9 +14,9 @@ pub const Maths = struct {
             return jsc.JSValueMakeUndefined(ctx);
         }
 
-        var numa = jsc.JSValueToNumber(ctx, arguments[0], null);
-        var numb = jsc.JSValueToNumber(ctx, arguments[1], null);
-        var result = numa + numb;
+        const numa = jsc.JSValueToNumber(ctx, arguments[0], null);
+        const numb = jsc.JSValueToNumber(ctx, arguments[1], null);
+        const result = numa + numb;
         return jsc.JSValueMakeNumber(ctx, result);
     }
 };

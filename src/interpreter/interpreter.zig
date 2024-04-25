@@ -22,7 +22,7 @@ pub const Interpreter = struct {
         const file = try std.fs.cwd().readFileAlloc(allocator, filename, std.math.maxInt(usize));
         defer allocator.free(file);
         const str = try allocator.alloc(u8, file.len + 1);
-        std.mem.copy(u8, str, file);
+        std.mem.copyForwards(u8, str, file);
         str[file.len] = 0;
         return str;
     }

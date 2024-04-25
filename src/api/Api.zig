@@ -7,6 +7,7 @@ const Console = @import("../apis/console/console.zig").Console;
 const Fs = @import("../apis/fs/fs.zig").Fs;
 const Server = @import("../apis//server/server.zig").Server;
 const constants = @import("../constants/constants.zig");
+const Shell = @import("../apis/shell/shell.zig").Shell;
 
 // Define the Apis structure
 pub const Apis = struct {
@@ -40,6 +41,9 @@ pub const Apis = struct {
         try this.larCustomFunction(ctx, larGlobalObject, constants.readFile, Fs.readFile);
         try this.larCustomFunction(ctx, larGlobalObject, constants.removeFile, Fs.removeFile);
         try this.larCustomFunction(ctx, larGlobalObject, constants.existsFile, Fs.existsFile);
+
+        // Shell
+        try this.larCustomFunction(ctx, larGlobalObject, constants.shell, Shell.shell);
     }
 
     // Define a custom function

@@ -284,7 +284,6 @@ pub const Console = struct {
 
         @memcpy(str_copy, str);
 
-
         const str_final = jsc.JSStringCreateWithUTF8CString(str_copy.ptr);
         defer jsc.JSStringRelease(str_final);
 

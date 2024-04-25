@@ -27,7 +27,7 @@ pub const Shell = struct {
         return buffer[0 .. argLen - 1];
     }
 
-    pub fn shell(
+    pub fn Shell(
         ctx: jsc.JSContextRef,
         globalObject: jsc.JSObjectRef,
         thisObject: jsc.JSObjectRef,
@@ -48,7 +48,7 @@ pub const Shell = struct {
             std.debug.print("Err {}\n", .{err});
             return jsc.JSValueMakeUndefined(ctx);
         };
-        
+
         _ = c.system(@as([*c]const u8, @ptrCast(command)));
 
         return jsc.JSValueMakeBoolean(ctx, true);

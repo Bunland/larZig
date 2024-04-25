@@ -31,6 +31,7 @@ console.timeEnd([label]) // soon
 console.timeLog([label][, ...data]) // soon
 console.trace([message][, ...args]) // soon
 console.warn([data][, ...args]) // soon
+console.prompt([labe]) // ready
 ```
 
 ### FS Api Status

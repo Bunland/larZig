@@ -32,6 +32,7 @@ pub const Console = struct {
         try this.consoleCustomFunction(ctx, consoleObject, constants.count, this.Count);
         try this.consoleCustomFunction(ctx, consoleObject, constants.countReset, this.CountReset);
         try this.consoleCustomFunction(ctx, consoleObject, constants.debug, this.Log);
+        try this.consoleCustomFunction(ctx, consoleObject, constants.prompt, this.Prompt);
 
         defer counters.deinit();
 
@@ -245,5 +246,48 @@ pub const Console = struct {
         }
 
         return jsc.JSValueMakeUndefined(ctx);
+    }
+
+    fn Prompt(ctx: jsc.JSContextRef, globalObject: jsc.JSObjectRef, thisObject: jsc.JSObjectRef, argumentsCount: usize, arguments: [*c]const jsc.JSValueRef, exception: [*c]jsc.JSValueRef) callconv(.C) jsc.JSValueRef {
+        _ = exception;
+        _ = globalObject;
+        _ = thisObject;
+        // _ = argumentsCount;
+        // _ = arguments;
+
+        if (argumentsCount < 1) {
+            std.debug.print("The function requires 1 argument\n", .{});
+            return jsc.JSValueMakeUndefined(ctx);
+        }
+
+        const message = this.convertJSVToString(ctx, arguments[0]) catch |err| {
+            std.debug.print("Err {}\n", .{err});
+            return jsc.JSValueMakeUndefined(ctx);
+        };
+
+        std.debug.print("{s}", .{message});
+
+        var stdIn = std.io.getStdIn().reader();
+        var buffer: [4096]u8 = undefined;
+        const bytes_entered = stdIn.read(&buffer) catch |err| {
+            std.debug.print("Err: {}\n", .{err});
+            return jsc.JSValueMakeUndefined(ctx);
+        };
+        const entered = buffer[0..bytes_entered];
+        const str = std.mem.trim(u8, entered, " \r\n\t");
+
+        const str_copy = allocator.alloc(u8, str.len) catch |err| {
+            std.debug.print("Err: {}\n", .{err});
+            return jsc.JSValueMakeUndefined(ctx);
+        };
+
+        @memcpy(str_copy, str);
+
+        defer allocator.free(str_copy);
+
+        const str_final = jsc.JSStringCreateWithUTF8CString(str_copy.ptr);
+        defer jsc.JSStringRelease(str_final);
+
+        return jsc.JSValueMakeString(ctx, str_final);
     }
 };

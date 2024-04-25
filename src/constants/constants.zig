@@ -14,6 +14,7 @@ pub const clear = "clear";
 pub const count = "count";
 pub const countReset = "countReset";
 pub const debug = "debug";
+pub const prompt = "prompt";
 
 // Sheel
 

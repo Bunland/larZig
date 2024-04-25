@@ -43,7 +43,7 @@ pub const Apis = struct {
         try this.larCustomFunction(ctx, larGlobalObject, constants.existsFile, Fs.existsFile);
 
         // Shell
-        try this.larCustomFunction(ctx, larGlobalObject, constants.shell, Shell.shell);
+        try this.larCustomFunction(ctx, larGlobalObject, constants.shell, Shell.Shell);
     }
 
     // Define a custom function

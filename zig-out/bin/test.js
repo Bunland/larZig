@@ -42,7 +42,7 @@
 
 // // // console.log(lar.writeFile("some.txt", "lucas"));
 
-// lar.shell(`cat x.js | grep name`)
+// lar.shell(`echo "Hello World!"`)
 
-const some = console.prompt("Type some: ")
-console.log("Tu ingresaste:", some)
+const some = console.prompt("Message: ");
+console.log("You typed:", some)

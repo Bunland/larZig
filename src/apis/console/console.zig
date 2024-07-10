@@ -280,10 +280,9 @@ pub const Console = struct {
             std.debug.print("Err: {}\n", .{err});
             return jsc.JSValueMakeUndefined(ctx);
         };
+        defer allocator.free(str_copy);
 
         @memcpy(str_copy, str);
-
-        defer allocator.free(str_copy);
 
         const str_final = jsc.JSStringCreateWithUTF8CString(str_copy.ptr);
         defer jsc.JSStringRelease(str_final);
